@@ -1,9 +1,7 @@
 package models
 
-import "gorm.io/gorm"
-
 type Comment struct {
-	gorm.Model
+	BaseModel
 	Content  string
 	PostId   uint
 	AuthorId uint

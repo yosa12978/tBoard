@@ -1,12 +1,10 @@
 package models
 
-import "gorm.io/gorm"
-
 type Post struct {
-	gorm.Model
+	BaseModel
 	Content   string
 	Timestamp uint64
-	Comments  []Comment `gorm:"foreignKey:PostId"`
+	Comments  []Comment `gorm:"foreignKey:PostId" json:",omitempty"`
 	AuthorId  uint
 }
 

@@ -12,6 +12,7 @@ import (
 type AccountEndpoints interface {
 	Login(ctx *gin.Context)
 	Signup(ctx *gin.Context)
+	Whoami(ctx *gin.Context)
 }
 
 type accountEndpoints struct {
@@ -25,20 +26,25 @@ func NewAccountEndpoints(db *gorm.DB) AccountEndpoints {
 func (ae *accountEndpoints) Login(ctx *gin.Context) {
 	var body models.LoginDTO
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
+		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"status":  401,
 			"message": err.Error(),
 		})
 		return
 	}
-	phash, _ := helpers.HashPassword(body.Password)
 	var acc models.Account
 	r := ae.db.First(&acc, "username = ?", body.Username)
-
-	if r.Error != nil || helpers.CheckPasswordHash(acc.Password, phash) {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"status":  404,
-			"message": r.Error.Error(),
+	if r.Error != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": "username or password is incorrect",
+		})
+		return
+	}
+	if !helpers.CheckPasswordHash(acc.Password, body.Password) {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": "username or password is incorrect",
 		})
 		return
 	}
@@ -91,4 +97,8 @@ func (ae *accountEndpoints) Signup(ctx *gin.Context) {
 		"status":  201,
 		"message": "created",
 	})
+}
+
+func (ae *accountEndpoints) Whoami(ctx *gin.Context) {
+	ctx.JSON(200, ctx.MustGet("account").(models.Account))
 }

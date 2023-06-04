@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -31,8 +32,9 @@ func (ce *commentEndpoints) GetPostComments(ctx *gin.Context) {
 func (ce *commentEndpoints) Create(ctx *gin.Context) {
 	var comment models.CommentCreateDTO
 	if err := ctx.ShouldBindJSON(&comment); err != nil {
-		ctx.JSON(400, gin.H{
-			"content": err.Error(),
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -40,8 +42,9 @@ func (ce *commentEndpoints) Create(ctx *gin.Context) {
 	err = ce.db.Where("id = ?", ctx.Param("postId")).
 		First(&models.Post{}).Error
 	if err != nil {
-		ctx.JSON(400, gin.H{
-			"content": err.Error(),
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -51,18 +54,26 @@ func (ce *commentEndpoints) Create(ctx *gin.Context) {
 		AuthorId: ctx.MustGet("account").(models.Account).ID,
 	})
 	ctx.JSON(201, gin.H{
-		"content": "created",
+		"status":  201,
+		"message": "created",
 	})
 }
 
 func (ce *commentEndpoints) Delete(ctx *gin.Context) {
-	if err := ce.db.Delete(&models.Comment{}, ctx.Param("id")).Error; err != nil {
-		ctx.JSON(400, gin.H{
-			"content": err.Error(),
+	var obj models.Comment
+	err := ce.db.Where("author_id = ? AND id = ?",
+		ctx.MustGet("account").(models.Account).ID,
+		ctx.Param("id")).First(&obj).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": err.Error(),
 		})
 		return
 	}
+	ce.db.Delete(obj)
 	ctx.JSON(200, gin.H{
-		"content": "success",
+		"status":  200,
+		"message": "success",
 	})
 }

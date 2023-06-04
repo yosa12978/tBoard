@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,8 +37,9 @@ func (pe *postEndpoints) GetById(ctx *gin.Context) {
 		Preload("Comments").
 		First(&post).Error
 	if err != nil {
-		ctx.JSON(404, gin.H{
-			"content": "not found",
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"status":  404,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -47,8 +49,9 @@ func (pe *postEndpoints) GetById(ctx *gin.Context) {
 func (pe *postEndpoints) Create(ctx *gin.Context) {
 	var post models.PostCreateDTO
 	if err := ctx.ShouldBindJSON(&post); err != nil {
-		ctx.JSON(400, gin.H{
-			"content": err.Error(),
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": err.Error(),
 		})
 		return
 	}
@@ -58,18 +61,26 @@ func (pe *postEndpoints) Create(ctx *gin.Context) {
 		AuthorId:  ctx.MustGet("account").(models.Account).ID,
 	})
 	ctx.JSON(201, gin.H{
-		"content": "created",
+		"status":  201,
+		"message": "created",
 	})
 }
 
 func (pe *postEndpoints) DeleteById(ctx *gin.Context) {
-	if err := pe.db.Delete(&models.Post{}, ctx.Param("id")).Error; err != nil {
-		ctx.JSON(400, gin.H{
-			"content": err.Error(),
+	var obj models.Post
+	err := pe.db.Where("author_id = ? AND id = ?",
+		ctx.MustGet("account").(models.Account).ID,
+		ctx.Param("id")).First(&obj).Error
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  400,
+			"message": err.Error(),
 		})
 		return
 	}
+	pe.db.Delete(obj)
 	ctx.JSON(200, gin.H{
-		"content": "success",
+		"status":  200,
+		"message": "success",
 	})
 }

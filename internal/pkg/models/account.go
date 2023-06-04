@@ -1,18 +1,16 @@
 package models
 
-import "gorm.io/gorm"
-
 const (
 	ROLE_USER uint8 = iota
 	ROLE_ADMIN
 )
 
 type Account struct {
-	gorm.Model
+	BaseModel
 	Username string
-	Password string
-	Posts    []Post    `gorm:"foreignKey:AuthorId"`
-	Comments []Comment `gorm:"foreignKey:AuthorId"`
+	Password string    `json:"-"`
+	Posts    []Post    `gorm:"foreignKey:AuthorId" json:",omitempty"`
+	Comments []Comment `gorm:"foreignKey:AuthorId" json:",omitempty"`
 	Role     uint8
 }
 
